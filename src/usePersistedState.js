@@ -39,20 +39,6 @@ export const usePersistedState = (
 		}
 	}, [key, storage])
 
-	// Funkce pro změnu stavu, která ukládá do localStorage a doupozorní všechny komponenty, že se stav změnil
-	const setState = (value) => {
-		// V localStorage můžou být jako hodnoty jen řetězce. Proto převedeme data (value) do jsonu
-		saveJSON(storage, key, JSON.stringify(value))
-		// Uložení do localStorage upozorňuje jen ostatní taby. Vytvoříme vlastní událost, která upozorní i tab, ve kterém zrovna jsme
-		window.dispatchEvent(
-			new CustomEvent('this-tab-storage', {
-				detail: {
-					key,
-				},
-			}),
-		)
-	}
-
 	// Do proměnné state vytáhneme data z localStorage. Pomocí hooku useMemo optimalizujeme výkon a data zpracováváme pouze v případě, že jsou jiné než při předchozím renderu
 	const state = useMemo(() => {
 		// Pomocí try a catch zkusíme převést data z jsonu do původní struktury
@@ -66,6 +52,22 @@ export const usePersistedState = (
 		// Vrátíme počáteční data, pokud selhal převod z jsonu
 		return initialState
 	}, [rawState])
+
+	// Funkce pro změnu stavu, která ukládá do localStorage a doupozorní všechny komponenty, že se stav změnil
+	const setState = (value) => {
+		// Stejně jako useState i usePersistedState podporuje ve value funkci pro práci s předchozí hodnotou
+		const valueToStore = value instanceof Function ? value(state) : value
+		// V localStorage můžou být jako hodnoty jen řetězce. Proto převedeme data (value) do jsonu
+		saveJSON(storage, key, JSON.stringify(valueToStore))
+		// Uložení do localStorage upozorňuje jen ostatní taby. Vytvoříme vlastní událost, která upozorní i tab, ve kterém zrovna jsme
+		window.dispatchEvent(
+			new CustomEvent('this-tab-storage', {
+				detail: {
+					key,
+				},
+			}),
+		)
+	}
 
 	return [state, setState]
 }
