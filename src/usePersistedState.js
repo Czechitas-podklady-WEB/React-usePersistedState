@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export const usePersistedState = (
 	initialState,
@@ -54,20 +54,23 @@ export const usePersistedState = (
 	}, [rawState])
 
 	// Funkce pro změnu stavu, která ukládá do localStorage a doupozorní všechny komponenty, že se stav změnil
-	const setState = (value) => {
-		// Stejně jako useState i usePersistedState podporuje ve value funkci pro práci s předchozí hodnotou
-		const valueToStore = value instanceof Function ? value(state) : value
-		// V localStorage můžou být jako hodnoty jen řetězce. Proto převedeme data (value) do jsonu
-		saveJSON(storage, key, JSON.stringify(valueToStore))
-		// Uložení do localStorage upozorňuje jen ostatní taby. Vytvoříme vlastní událost, která upozorní i tab, ve kterém zrovna jsme
-		window.dispatchEvent(
-			new CustomEvent('this-tab-storage', {
-				detail: {
-					key,
-				},
-			}),
-		)
-	}
+	const setState = useCallback(
+		(value) => {
+			// Stejně jako useState i usePersistedState podporuje ve value funkci pro práci s předchozí hodnotou
+			const valueToStore = value instanceof Function ? value(state) : value
+			// V localStorage můžou být jako hodnoty jen řetězce. Proto převedeme data (value) do jsonu
+			saveJSON(storage, key, JSON.stringify(valueToStore))
+			// Uložení do localStorage upozorňuje jen ostatní taby. Vytvoříme vlastní událost, která upozorní i tab, ve kterém zrovna jsme
+			window.dispatchEvent(
+				new CustomEvent('this-tab-storage', {
+					detail: {
+						key,
+					},
+				}),
+			)
+		},
+		[key, state, storage],
+	)
 
 	return [state, setState]
 }
