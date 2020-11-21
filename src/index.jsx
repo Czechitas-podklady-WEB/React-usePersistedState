@@ -1,16 +1,19 @@
-import React from 'react';
-import { render } from 'react-dom';
-import './index.html';
+import React from 'react'
+import { render } from 'react-dom'
+import './index.html'
+import { Pocitadlo } from './Pocitadlo'
+import { Ukoly } from './Ukoly'
 
 render(
-  <>
-    <header>
-      <h1>React Starter</h1>
-    </header>
-    <main>
-      <p>Moje první React stránka</p>
-    </main>
-    <footer>Martin Podloucký</footer>
-  </>,
-  document.querySelector('#app'),
-);
+	<>
+		<header>
+			<h1>React usePersistedState</h1>
+		</header>
+		<main>
+			<Pocitadlo />
+			<Ukoly />
+			<Ukoly />
+		</main>
+	</>,
+	document.querySelector('#app'),
+)
