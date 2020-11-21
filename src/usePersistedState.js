@@ -20,11 +20,12 @@ export const usePersistedState = (
 	useEffect(() => {
 		// Funkce pro zpracování události změny v localStorage
 		const onChange = (event) => {
+			// Vyjmeme z události klíč pro data a novou hodnotu dat
+			const { key: eventKey, newValue } =
+				event instanceof CustomEvent ? event.detail : event
 			// Zkontrolujeme, jestli se změnily data, která nás zajímají
-			if (
-				(event instanceof CustomEvent ? event.detail.key : event.key) === key
-			) {
-				setRawState(loadJSON(storage, key, initialState))
+			if (eventKey === key) {
+				setRawState(missingDataCheck(newValue, initialState))
 			}
 		}
 
@@ -57,14 +58,17 @@ export const usePersistedState = (
 	const setState = useCallback(
 		(value) => {
 			// Stejně jako useState i usePersistedState podporuje ve value funkci pro práci s předchozí hodnotou
-			const valueToStore = value instanceof Function ? value(state) : value
+			const valueToStore = JSON.stringify(
+				value instanceof Function ? value(state) : value,
+			)
 			// V localStorage můžou být jako hodnoty jen řetězce. Proto převedeme data (value) do jsonu
-			saveJSON(storage, key, JSON.stringify(valueToStore))
+			saveJSON(storage, key, valueToStore)
 			// Uložení do localStorage upozorňuje jen ostatní taby. Vytvoříme vlastní událost, která upozorní i tab, ve kterém zrovna jsme
 			window.dispatchEvent(
 				new CustomEvent('this-tab-storage', {
 					detail: {
 						key,
+						newValue: valueToStore,
 					},
 				}),
 			)
@@ -75,9 +79,14 @@ export const usePersistedState = (
 	return [state, setState]
 }
 
-// Funce pro čtení z localStorage. Vrací počáteční hodnotu, pokud v localStorage pod daným klíčem ještě nejsou žádná data
+// Funkce pro čtení z localStorage. Vrací počáteční hodnotu, pokud v localStorage pod daným klíčem ještě nejsou žádná data
 const loadJSON = (storage, key, fallbackValue) => {
 	const data = storage.getItem(key)
+	return missingDataCheck(data, fallbackValue)
+}
+
+// Vrací počáteční hodnotu, pokud jsou data prázdná
+const missingDataCheck = (data, fallbackValue) => {
 	// Data se rovnají null, pokud v localStorage ještě žádná nejsou
 	if (data === null) {
 		return JSON.stringify(fallbackValue)
@@ -87,5 +96,9 @@ const loadJSON = (storage, key, fallbackValue) => {
 
 // Ukládá do localStorage
 const saveJSON = (storage, key, value) => {
-	storage.setItem(key, value)
+	try {
+		storage.setItem(key, value)
+	} catch (error) {
+		console.error(error)
+	}
 }
