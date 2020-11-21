@@ -12,25 +12,24 @@ export const usePersistedState = (initialState, key) => {
 
 	// Při prvním renderu komponenty přidá posluchače událostí
 	useEffect(() => {
-		// Funkce pro zpracování události změny v localStorage způsobené jiným tabem
-		const onOtherTabChange = (event) => {
-			if (event.key === key) {
+		// Funkce pro zpracování události změny v localStorage
+		const onChange = (event) => {
+			// Zkontrolujeme, jestli se změnily data, která nás zajímají
+			if (
+				(event instanceof CustomEvent ? event.detail.key : event.key) === key
+			) {
 				setRawState(loadJSON(key, initialState))
 			}
 		}
-		// Pro změny z aktuálního tabu
-		const onThisTabChange = () => {
-			setRawState(loadJSON(key, initialState))
-		}
 
 		// Přidání posluchaču
-		window.addEventListener('storage', onOtherTabChange)
-		window.addEventListener('this-tab-storage', onThisTabChange)
+		window.addEventListener('storage', onChange)
+		window.addEventListener('this-tab-storage', onChange)
 
 		// Odebrání posluchačů po odebrání komponenty ze stránky
 		return () => {
-			window.removeEventListener('storage', onOtherTabChange)
-			window.removeEventListener('this-tab-storage', onThisTabChange)
+			window.removeEventListener('storage', onChange)
+			window.removeEventListener('this-tab-storage', onChange)
 		}
 	}, [key])
 
@@ -39,7 +38,13 @@ export const usePersistedState = (initialState, key) => {
 		// V localStorage můžou být jako hodnoty jen řetězce. Proto převedeme data (value) do jsonu
 		saveJSON(key, JSON.stringify(value))
 		// Uložení do localStorage upozorňuje jen ostatní taby. Vytvoříme vlastní událost, která upozorní i tab, ve kterém zrovna jsme
-		window.dispatchEvent(new Event('this-tab-storage'))
+		window.dispatchEvent(
+			new CustomEvent('this-tab-storage', {
+				detail: {
+					key,
+				},
+			}),
+		)
 	}
 
 	// Do proměnné state vytáhneme data z localStorage. Pomocí hooku useMemo optimalizujeme výkon a data zpracováváme pouze v případě, že jsou jiné než při předchozím renderu
