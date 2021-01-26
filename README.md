@@ -25,3 +25,5 @@ const MojeKomponenta = () => {
 	)
 }
 ```
+
+Kód je k dispozici i jako balíček. [npmjs.com/package/use-storage-backed-state](https://www.npmjs.com/package/use-storage-backed-state)
